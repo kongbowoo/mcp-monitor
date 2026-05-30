@@ -66,12 +66,21 @@ class MCPMonitor {
     }
   }
 
+  hideCallGraph() {
+    // 隐藏调用关系图面板
+    const graphPanel =
+      document.querySelector("#callGraph").parentNode.parentNode;
+    graphPanel.style.display = "none";
+
+    // 清除图形内容
+    d3.select("#callGraph").selectAll("*").remove();
+  }
+
   async loadAllData() {
     try {
       await Promise.all([
         this.loadStats(),
         this.loadCalls(),
-        this.loadGraphData(),
         this.loadPerformance(),
         this.loadUsagePatterns(),
       ]);
@@ -242,6 +251,9 @@ class MCPMonitor {
   }
 
   renderCallsTable(calls) {
+    // 初始隐藏调用关系图
+    this.hideCallGraph();
+
     const tbody = document.getElementById("callsBody");
     tbody.innerHTML = "";
 
@@ -501,7 +513,13 @@ class MCPMonitor {
       .append("text")
       .attr("text-anchor", "middle")
       .attr("dy", (d) => (d.type === "server" ? 40 : 25))
-      .text((d) => d.label)
+      .text((d) => {
+        // 工具节点显示工具名 + 调用次数
+        if (d.type === "tool") {
+          return `${d.label} (${d.count})`;
+        }
+        return d.label;
+      })
       .style("font-size", "12px")
       .style("pointer-events", "none");
 
@@ -554,8 +572,9 @@ class MCPMonitor {
 
   dragended(event, d, simulation) {
     if (!event.active) simulation.alphaTarget(0);
-    d.fx = null;
-    d.fy = null;
+    // 保持节点在拖动后的位置
+    d.fx = event.x;
+    d.fy = event.y;
   }
 
   async loadPerformance() {

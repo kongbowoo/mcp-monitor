@@ -169,6 +169,14 @@ class Database {
    * 获取调用关系图数据
    */
   getGraphData(sessionId = null) {
+    // 当没有指定 sessionId 时，返回空数据
+    if (!sessionId) {
+      return {
+        nodes: [],
+        links: [],
+      };
+    }
+
     const allCalls = this.getAllCalls();
     const nodes = new Map();
     const links = new Map();
@@ -194,71 +202,61 @@ class Database {
     // 为每个会话创建拓扑链路
     sessions.forEach((calls, callSessionId) => {
       // 添加会话节点
-      if (!nodes.has(sessionId)) {
-        nodes.set(sessionId, {
-          id: sessionId,
+      if (!nodes.has(callSessionId)) {
+        nodes.set(callSessionId, {
+          id: callSessionId,
           type: "session",
-          label: `Session: ${sessionId.substring(0, 8)}...`,
+          label: `Session: ${callSessionId.substring(0, 8)}...`,
           count: calls.length,
           tools: new Set(),
         });
       }
 
-      // 添加工具节点（每个会话的工具节点都是独立的）
-      calls.forEach((call) => {
-        const toolNodeId = `${sessionId}__${call.tool}`;
-        if (!nodes.has(toolNodeId)) {
-          nodes.set(toolNodeId, {
-            id: toolNodeId,
-            type: "tool",
-            label: call.tool,
-            count: 0,
-            server: call.server,
-            sessionId: sessionId,
-            timestamp: call.timestamp,
-          });
-        }
-        nodes.get(toolNodeId).count++;
-        nodes.get(sessionId).tools.add(call.tool);
+      // 添加工具节点（每个工具调用都创建独立节点，按时间顺序显示）
+      calls.forEach((call, index) => {
+        const toolNodeId = `${callSessionId}__${call.tool}__${index}`;
+        nodes.set(toolNodeId, {
+          id: toolNodeId,
+          type: "tool",
+          label: call.tool,
+          count: 1,
+          server: call.server,
+          sessionId: callSessionId,
+          timestamp: call.timestamp,
+        });
+        nodes.get(callSessionId).tools.add(call.tool);
       });
 
       // 添加会话到第一个工具的连接
       if (calls.length > 0) {
-        const firstCall = calls[0];
-        const firstToolNodeId = `${sessionId}__${firstCall.tool}`;
-        const sessionToolLinkKey = `${sessionId}->${firstToolNodeId}`;
+        const firstToolNodeId = `${callSessionId}__${calls[0].tool}__0`;
+        const sessionToolLinkKey = `${callSessionId}->${firstToolNodeId}`;
         if (!links.has(sessionToolLinkKey)) {
           links.set(sessionToolLinkKey, {
-            source: sessionId,
+            source: callSessionId,
             target: firstToolNodeId,
-            count: 0,
+            count: 1,
             type: "starts",
-            timestamp: firstCall.timestamp,
+            timestamp: calls[0].timestamp,
           });
         }
-        links.get(sessionToolLinkKey).count++;
       }
-      // 添加工具调用之间的时序连接
+      // 添加工具调用之间的时序连接（按时间顺序连接每个工具调用节点）
       for (let i = 0; i < calls.length - 1; i++) {
         const currentCall = calls[i];
         const nextCall = calls[i + 1];
-        const currentToolNodeId = `${sessionId}__${currentCall.tool}`;
-        const nextToolNodeId = `${sessionId}__${nextCall.tool}`;
+        const currentToolNodeId = `${callSessionId}__${currentCall.tool}__${i}`;
+        const nextToolNodeId = `${callSessionId}__${nextCall.tool}__${i + 1}`;
 
-        // 避免添加自连接
-        if (currentToolNodeId !== nextToolNodeId) {
-          const toolLinkKey = `${currentToolNodeId}->${nextToolNodeId}`;
-
-          if (!links.has(toolLinkKey)) {
-            links.set(toolLinkKey, {
-              source: currentToolNodeId,
-              target: nextToolNodeId,
-              count: 0,
-              type: "followedBy",
-              timestamp: nextCall.timestamp,
-            });
-          }
-          links.get(toolLinkKey).count++;
+        const toolLinkKey = `${currentToolNodeId}->${nextToolNodeId}`;
+        if (!links.has(toolLinkKey)) {
+          links.set(toolLinkKey, {
+            source: currentToolNodeId,
+            target: nextToolNodeId,
+            count: 1,
+            type: "followedBy",
+            timestamp: nextCall.timestamp,
+          });
         }
       }
     });
