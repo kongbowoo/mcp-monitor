@@ -1,0 +1,41 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd D:/Code/MCPMonitor && node monitor/tracker.js --pre",
+            "timeout": 30,
+            "statusMessage": "Tracking MCP tool call..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd D:/Code/MCPMonitor && node monitor/tracker.js --post",
+            "timeout": 30,
+            "statusMessage": "Recording MCP tool result..."
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(node *)",
+      "Read(D:\\Code\\MCPMonitor\\*)",
+      "Write(D:\\Code\\MCPMonitor\\data\\*)"
+    ]
+  },
+  "env": {
+    "MCP_MONITOR_PORT": "3000",
+    "MCP_MONITOR_DATA_DIR": "D:\\Code\\MCPMonitor\\data"
+  }
+}
