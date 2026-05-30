@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { Command } = require('commander');
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-const Database = require('./database');
-const Analyzer = require('./analyzer');
+const fs = require("fs");
+const path = require("path");
+const { Command } = require("commander");
+const createCsvWriter = require("csv-writer").createObjectCsvWriter;
+const Database = require("./database");
+const Analyzer = require("./analyzer");
 
 const program = new Command();
 
 program
-  .name('mcp-reporter')
-  .description('MCP 工具调用分析报告生成器')
-  .version('1.0.0');
+  .name("mcp-reporter")
+  .description("MCP 工具调用分析报告生成器")
+  .version("1.0.0");
 
 program
-  .option('--format <type>', '报告格式 (json, csv, html)', 'json')
-  .option('--output <path>', '输出文件路径')
-  .option('--limit <number>', '限制报告中的记录数')
-  .option('--tool <name>', '过滤特定工具')
-  .option('--server <name>', '过滤特定服务器')
-  .option('--start <date>', '开始日期 (ISO 格式)')
-  .option('--end <date>', '结束日期 (ISO 格式)');
+  .option("--format <type>", "报告格式 (json, csv, html)", "json")
+  .option("--output <path>", "输出文件路径")
+  .option("--limit <number>", "限制报告中的记录数")
+  .option("--tool <name>", "过滤特定工具")
+  .option("--server <name>", "过滤特定服务器")
+  .option("--start <date>", "开始日期 (ISO 格式)")
+  .option("--end <date>", "结束日期 (ISO 格式)");
 
 program.parse(process.argv);
 
@@ -36,40 +36,40 @@ async function generateCsvReport(outputPath, query) {
   const calls = db.findCalls(query);
 
   if (calls.length === 0) {
-    console.log('没有符合条件的调用记录');
+    console.log("没有符合条件的调用记录");
     return;
   }
 
   // 准备数据
-  const records = calls.map(call => ({
+  const records = calls.map((call) => ({
     id: call.id,
     tool: call.tool,
     server: call.server,
     operation: call.operation,
     timestamp: call.timestamp,
-    duration: call.duration || '',
+    duration: call.duration || "",
     status: call.status,
     input: JSON.stringify(call.input),
     output: JSON.stringify(call.output),
     sessionId: call.context.sessionId,
-    conversationId: call.context.conversationId
+    conversationId: call.context.conversationId,
   }));
 
   const csvWriter = createCsvWriter({
     path: outputPath,
     header: [
-      { id: 'id', title: 'ID' },
-      { id: 'tool', title: '工具' },
-      { id: 'server', title: '服务器' },
-      { id: 'operation', title: '操作' },
-      { id: 'timestamp', title: '时间戳' },
-      { id: 'duration', title: '持续时间(ms)' },
-      { id: 'status', title: '状态' },
-      { id: 'input', title: '输入' },
-      { id: 'output', title: '输出' },
-      { id: 'sessionId', title: '会话ID' },
-      { id: 'conversationId', title: '对话ID' }
-    ]
+      { id: "id", title: "ID" },
+      { id: "tool", title: "工具" },
+      { id: "server", title: "服务器" },
+      { id: "operation", title: "操作" },
+      { id: "timestamp", title: "时间戳" },
+      { id: "duration", title: "持续时间(ms)" },
+      { id: "status", title: "状态" },
+      { id: "input", title: "输入" },
+      { id: "output", title: "输出" },
+      { id: "sessionId", title: "会话ID" },
+      { id: "conversationId", title: "对话ID" },
+    ],
   });
 
   await csvWriter.writeRecords(records);
@@ -227,7 +227,10 @@ function generateHtmlReport(outputPath, query) {
                 </tr>
             </thead>
             <tbody>
-                ${calls.slice(0, options.limit || calls.length).map(call => `
+                ${calls
+                  .slice(0, options.limit || calls.length)
+                  .map(
+                    (call) => `
                     <tr>
                         <td>${call.id}</td>
                         <td>${call.tool}</td>
@@ -236,49 +239,76 @@ function generateHtmlReport(outputPath, query) {
                         <td>${call.duration}</td>
                         <td class="status-${call.status}">${call.status}</td>
                     </tr>
-                `).join('')}
+                `,
+                  )
+                  .join("")}
             </tbody>
         </table>
 
         <h2>工具使用统计</h2>
-        ${Object.entries(statistics.tools).map(([tool, data]) => `
+        ${Object.entries(statistics.tools)
+          .map(
+            ([tool, data]) => `
             <h3>${tool}</h3>
             <p>调用次数: ${data.count}, 成功: ${data.successful}, 失败: ${data.failed},
             平均耗时: ${data.avgDuration}ms</p>
-        `).join('')}
+        `,
+          )
+          .join("")}
 
         <h2>服务器使用统计</h2>
-        ${Object.entries(statistics.servers).map(([server, data]) => `
+        ${Object.entries(statistics.servers)
+          .map(
+            ([server, data]) => `
             <h3>${server}</h3>
             <p>调用次数: ${data.count}, 成功: ${data.successful}, 失败: ${data.failed}</p>
             <div class="tools-list">
-                ${data.tools.map(tool => `<span class="tool-tag">${tool}</span>`).join('')}
+                ${data.tools.map((tool) => `<span class="tool-tag">${tool}</span>`).join("")}
             </div>
-        `).join('')}
+        `,
+          )
+          .join("")}
 
         <h2>性能分析</h2>
         <h3>最慢的工具</h3>
-        ${performance.slowest.map((item, index) => `
+        ${performance.slowest
+          .map(
+            (item, index) => `
             <p>${index + 1}. ${item.tool}: 平均 ${item.avg}ms (${item.count} 次调用)</p>
-        `).join('')}
+        `,
+          )
+          .join("")}
 
         <h3>最快的工具</h3>
-        ${performance.fastest.map((item, index) => `
+        ${performance.fastest
+          .map(
+            (item, index) => `
             <p>${index + 1}. ${item.tool}: 平均 ${item.avg}ms (${item.count} 次调用)</p>
-        `).join('')}
+        `,
+          )
+          .join("")}
 
         <h2>错误分析</h2>
         <p>总错误数: ${errors.totalErrors}</p>
 
         <h3>按工具分类的错误</h3>
-        ${Object.entries(errors.errorsByTool).map(([tool, count]) => `
+        ${Object.entries(errors.errorsByTool)
+          .map(
+            ([tool, count]) => `
             <p>${tool}: ${count} 次错误</p>
-        `).join('')}
+        `,
+          )
+          .join("")}
 
         <h3>常见错误类型</h3>
-        ${errors.commonErrors.slice(0, 10).map((item, index) => `
+        ${errors.commonErrors
+          .slice(0, 10)
+          .map(
+            (item, index) => `
             <p>${index + 1}. ${item.error}: ${item.count} 次</p>
-        `).join('')}
+        `,
+          )
+          .join("")}
     </div>
 </body>
 </html>
@@ -323,8 +353,12 @@ async function main() {
   // 确定输出路径
   let outputPath = options.output;
   if (!outputPath) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    outputPath = path.join(__dirname, '..', `report-${timestamp}.${options.format}`);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    outputPath = path.join(
+      __dirname,
+      "..",
+      `report-${timestamp}.${options.format}`,
+    );
   }
 
   // 确保输出目录存在
@@ -335,13 +369,13 @@ async function main() {
 
   // 生成报告
   switch (options.format) {
-    case 'json':
+    case "json":
       await generateJsonReport(outputPath, query);
       break;
-    case 'csv':
+    case "csv":
       await generateCsvReport(outputPath, query);
       break;
-    case 'html':
+    case "html":
       generateHtmlReport(outputPath, query);
       break;
     default:
@@ -350,7 +384,7 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  console.error('生成报告失败:', error);
+main().catch((error) => {
+  console.error("生成报告失败:", error);
   process.exit(1);
 });

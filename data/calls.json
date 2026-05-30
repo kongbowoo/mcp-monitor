@@ -177,5 +177,85 @@
     "context": {
       "sessionId": "543c334f-174c-48bf-85df-92af39792cb8"
     }
+  },
+  {
+    "id": "test-123",
+    "tool": "mcp__context7__query-docs",
+    "server": "context7",
+    "operation": "query-docs",
+    "timestamp": "2026-05-30T08:21:55.859Z",
+    "duration": 1500,
+    "status": "success",
+    "input": {
+      "libraryId": "/vercel/next.js",
+      "query": "test"
+    },
+    "output": {
+      "result": "test result"
+    },
+    "context": {
+      "sessionId": "session-1",
+      "conversationId": "conv-1"
+    }
+  },
+  {
+    "id": "test-123",
+    "tool": "mcp__context7__query-docs",
+    "server": "context7",
+    "operation": "query-docs",
+    "timestamp": "2026-05-30T08:22:10.013Z",
+    "duration": 1500,
+    "status": "success",
+    "input": {
+      "libraryId": "/vercel/next.js",
+      "query": "test"
+    },
+    "output": {
+      "result": "test result"
+    },
+    "context": {
+      "sessionId": "session-1",
+      "conversationId": "conv-1"
+    }
+  },
+  {
+    "id": "test-123",
+    "tool": "mcp__context7__query-docs",
+    "server": "context7",
+    "operation": "query-docs",
+    "timestamp": "2026-05-30T08:27:32.964Z",
+    "duration": 1500,
+    "status": "success",
+    "input": {
+      "libraryId": "/vercel/next.js",
+      "query": "test"
+    },
+    "output": {
+      "result": "test result"
+    },
+    "context": {
+      "sessionId": "session-1",
+      "conversationId": "conv-1"
+    }
+  },
+  {
+    "id": "test-123",
+    "tool": "mcp__context7__query-docs",
+    "server": "context7",
+    "operation": "query-docs",
+    "timestamp": "2026-05-30T08:37:57.136Z",
+    "duration": 1500,
+    "status": "success",
+    "input": {
+      "libraryId": "/vercel/next.js",
+      "query": "test"
+    },
+    "output": {
+      "result": "test result"
+    },
+    "context": {
+      "sessionId": "session-1",
+      "conversationId": "conv-1"
+    }
   }
 ]

@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const CALLS_FILE = path.join(DATA_DIR, 'calls.json');
+const DATA_DIR = path.join(__dirname, "..", "data");
+const CALLS_FILE = path.join(DATA_DIR, "calls.json");
 
 class Database {
   constructor() {
@@ -22,10 +22,10 @@ class Database {
    */
   getAllCalls() {
     try {
-      const data = JSON.parse(fs.readFileSync(CALLS_FILE, 'utf8'));
+      const data = JSON.parse(fs.readFileSync(CALLS_FILE, "utf8"));
       return data;
     } catch (error) {
-      console.error('Error reading calls:', error);
+      console.error("Error reading calls:", error);
       return [];
     }
   }
@@ -36,7 +36,7 @@ class Database {
   findCalls(query = {}) {
     const allCalls = this.getAllCalls();
 
-    return allCalls.filter(call => {
+    return allCalls.filter((call) => {
       // 工具名称过滤
       if (query.tool && !call.tool.includes(query.tool)) {
         return false;
@@ -81,70 +81,76 @@ class Database {
 
     const stats = {
       totalCalls: allCalls.length,
-      successfulCalls: allCalls.filter(call => call.status === 'success').length,
-      failedCalls: allCalls.filter(call => call.status === 'error').length,
-      pendingCalls: allCalls.filter(call => call.status === 'pending').length,
+      successfulCalls: allCalls.filter((call) => call.status === "success")
+        .length,
+      failedCalls: allCalls.filter((call) => call.status === "error").length,
+      pendingCalls: allCalls.filter((call) => call.status === "pending").length,
       avgDuration: 0,
       tools: {},
-      servers: {}
+      servers: {},
     };
 
     // 计算平均持续时间（只统计成功的调用）
     const successfulWithDuration = allCalls.filter(
-      call => call.status === 'success' && call.duration != null
+      (call) => call.status === "success" && call.duration != null,
     );
     if (successfulWithDuration.length > 0) {
-      const totalDuration = successfulWithDuration.reduce((sum, call) => sum + call.duration, 0);
-      stats.avgDuration = Math.round(totalDuration / successfulWithDuration.length);
+      const totalDuration = successfulWithDuration.reduce(
+        (sum, call) => sum + call.duration,
+        0,
+      );
+      stats.avgDuration = Math.round(
+        totalDuration / successfulWithDuration.length,
+      );
     }
 
     // 工具统计
-    allCalls.forEach(call => {
+    allCalls.forEach((call) => {
       if (!stats.tools[call.tool]) {
         stats.tools[call.tool] = {
           count: 0,
           successful: 0,
           failed: 0,
-          duration: 0
+          duration: 0,
         };
       }
 
       stats.tools[call.tool].count++;
-      if (call.status === 'success') {
+      if (call.status === "success") {
         stats.tools[call.tool].successful++;
         if (call.duration != null) {
           stats.tools[call.tool].duration += call.duration;
         }
-      } else if (call.status === 'error') {
+      } else if (call.status === "error") {
         stats.tools[call.tool].failed++;
       }
     });
 
     // 计算工具平均持续时间
-    Object.keys(stats.tools).forEach(tool => {
+    Object.keys(stats.tools).forEach((tool) => {
       if (stats.tools[tool].successful > 0) {
         stats.tools[tool].avgDuration = Math.round(
-          stats.tools[tool].duration / stats.tools[tool].successful
+          stats.tools[tool].duration / stats.tools[tool].successful,
         );
       }
       delete stats.tools[tool].duration;
     });
 
     // 服务器统计
-    allCalls.forEach(call => {
+    allCalls.forEach((call) => {
       if (!stats.servers[call.server]) {
         stats.servers[call.server] = {
           count: 0,
           successful: 0,
           failed: 0,
-          tools: new Set()
+          tools: new Set(),
         };
       }
 
       stats.servers[call.server].count++;
-      if (call.status === 'success') {
+      if (call.status === "success") {
         stats.servers[call.server].successful++;
-      } else if (call.status === 'error') {
+      } else if (call.status === "error") {
         stats.servers[call.server].failed++;
       }
 
@@ -152,7 +158,7 @@ class Database {
     });
 
     // 转换 Set 为数组
-    Object.keys(stats.servers).forEach(server => {
+    Object.keys(stats.servers).forEach((server) => {
       stats.servers[server].tools = Array.from(stats.servers[server].tools);
     });
 
@@ -162,82 +168,135 @@ class Database {
   /**
    * 获取调用关系图数据
    */
-  getGraphData() {
+  getGraphData(sessionId = null) {
     const allCalls = this.getAllCalls();
     const nodes = new Map();
     const links = new Map();
 
-    allCalls.forEach(call => {
+    // 按会话分组调用
+    const sessions = new Map();
+    allCalls.forEach((call) => {
+      const callSessionId = call.context?.sessionId;
+      if (sessionId && callSessionId !== sessionId) {
+        return; // 只返回指定会话的调用数据
+      }
+      if (!sessions.has(callSessionId)) {
+        sessions.set(callSessionId, []);
+      }
+      sessions.get(callSessionId).push(call);
+    });
+
+    // 对每个会话的调用按时间排序
+    sessions.forEach((calls) => {
+      calls.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    });
+
+    // 为每个会话创建拓扑链路
+    sessions.forEach((calls, callSessionId) => {
       // 添加会话节点
-      const sessionId = call.context?.sessionId;
-      if (sessionId && !nodes.has(sessionId)) {
+      if (!nodes.has(sessionId)) {
         nodes.set(sessionId, {
           id: sessionId,
-          type: 'session',
+          type: "session",
           label: `Session: ${sessionId.substring(0, 8)}...`,
-          count: 0,
-          tools: new Set()
+          count: calls.length,
+          tools: new Set(),
         });
-      }
-      if (sessionId) {
-        nodes.get(sessionId).count++;
-        nodes.get(sessionId).tools.add(call.tool);
       }
 
       // 添加服务器节点
-      if (!nodes.has(call.server)) {
-        nodes.set(call.server, {
-          id: call.server,
-          type: 'server',
-          label: call.server,
-          count: 0,
-          tools: new Set()
-        });
-      }
-      nodes.get(call.server).count++;
-      nodes.get(call.server).tools.add(call.tool);
+      calls.forEach((call) => {
+        if (!nodes.has(call.server)) {
+          nodes.set(call.server, {
+            id: call.server,
+            type: "server",
+            label: call.server,
+            count: 0,
+            tools: new Set(),
+          });
+        }
+        nodes.get(call.server).count++;
+        nodes.get(call.server).tools.add(call.tool);
+      });
 
-      // 添加工具节点
-      if (!nodes.has(call.tool)) {
-        nodes.set(call.tool, {
-          id: call.tool,
-          type: 'tool',
-          label: call.tool,
-          count: 0,
-          server: call.server
-        });
-      }
-      nodes.get(call.tool).count++;
+      // 添加工具节点（每个会话的工具节点都是独立的）
+      calls.forEach((call) => {
+        const toolNodeId = `${sessionId}__${call.tool}`;
+        if (!nodes.has(toolNodeId)) {
+          nodes.set(toolNodeId, {
+            id: toolNodeId,
+            type: "tool",
+            label: call.tool,
+            count: 0,
+            server: call.server,
+            sessionId: sessionId,
+            timestamp: call.timestamp,
+          });
+        }
+        nodes.get(toolNodeId).count++;
+        nodes.get(sessionId).tools.add(call.tool);
+      });
 
-      // 添加会话到工具的连接
-      if (sessionId) {
-        const sessionToolLinkKey = `${sessionId}->${call.tool}`;
+      // 添加会话到第一个工具的连接
+      if (calls.length > 0) {
+        const firstCall = calls[0];
+        const firstToolNodeId = `${sessionId}__${firstCall.tool}`;
+        const sessionToolLinkKey = `${sessionId}->${firstToolNodeId}`;
         if (!links.has(sessionToolLinkKey)) {
           links.set(sessionToolLinkKey, {
             source: sessionId,
-            target: call.tool,
+            target: firstToolNodeId,
             count: 0,
-            type: 'uses'
+            type: "starts",
+            timestamp: firstCall.timestamp,
           });
         }
         links.get(sessionToolLinkKey).count++;
       }
 
-      // 添加服务器到工具的连接
-      const serverToolLinkKey = `${call.server}->${call.tool}`;
-      if (!links.has(serverToolLinkKey)) {
-        links.set(serverToolLinkKey, {
-          source: call.server,
-          target: call.tool,
-          count: 0,
-          type: 'uses'
-        });
+      // 添加工具到服务器的连接
+      calls.forEach((call) => {
+        const toolNodeId = `${sessionId}__${call.tool}`;
+        const toolServerLinkKey = `${toolNodeId}->${call.server}`;
+        if (!links.has(toolServerLinkKey)) {
+          links.set(toolServerLinkKey, {
+            source: toolNodeId,
+            target: call.server,
+            count: 0,
+            type: "runsOn",
+            timestamp: call.timestamp,
+          });
+        }
+        links.get(toolServerLinkKey).count++;
+      });
+
+      // 添加工具调用之间的时序连接
+      for (let i = 0; i < calls.length - 1; i++) {
+        const currentCall = calls[i];
+        const nextCall = calls[i + 1];
+        const currentToolNodeId = `${sessionId}__${currentCall.tool}`;
+        const nextToolNodeId = `${sessionId}__${nextCall.tool}`;
+
+        // 避免添加自连接
+        if (currentToolNodeId !== nextToolNodeId) {
+          const toolLinkKey = `${currentToolNodeId}->${nextToolNodeId}`;
+
+          if (!links.has(toolLinkKey)) {
+            links.set(toolLinkKey, {
+              source: currentToolNodeId,
+              target: nextToolNodeId,
+              count: 0,
+              type: "followedBy",
+              timestamp: nextCall.timestamp,
+            });
+          }
+          links.get(toolLinkKey).count++;
+        }
       }
-      links.get(serverToolLinkKey).count++;
     });
 
     // 转换 Set 为数组
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       if (node.tools) {
         node.tools = Array.from(node.tools);
       }
@@ -245,7 +304,7 @@ class Database {
 
     return {
       nodes: Array.from(nodes.values()),
-      links: Array.from(links.values())
+      links: Array.from(links.values()),
     };
   }
 
@@ -257,7 +316,7 @@ class Database {
       fs.writeFileSync(CALLS_FILE, JSON.stringify([], null, 2));
       return true;
     } catch (error) {
-      console.error('Error clearing calls:', error);
+      console.error("Error clearing calls:", error);
       return false;
     }
   }
@@ -271,16 +330,18 @@ class Database {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - daysToKeep);
 
-    const keptCalls = allCalls.filter(call => new Date(call.timestamp) > cutoff);
+    const keptCalls = allCalls.filter(
+      (call) => new Date(call.timestamp) > cutoff,
+    );
 
     try {
       fs.writeFileSync(CALLS_FILE, JSON.stringify(keptCalls, null, 2));
       return {
         kept: keptCalls.length,
-        deleted: allCalls.length - keptCalls.length
+        deleted: allCalls.length - keptCalls.length,
       };
     } catch (error) {
-      console.error('Error pruning records:', error);
+      console.error("Error pruning records:", error);
       return null;
     }
   }
