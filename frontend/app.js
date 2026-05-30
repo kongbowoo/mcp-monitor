@@ -111,6 +111,12 @@ class MCPMonitor {
       this.toolChart.destroy();
     }
 
+    // 根据工具数量动态调整容器高度，每个工具至少 36px
+    const containerDiv = ctx.parentElement;
+    const minHeight = 200;
+    const itemHeight = 36;
+    containerDiv.style.height = Math.max(minHeight, labels.length * itemHeight + 60) + "px";
+
     this.toolChart = new Chart(ctx, {
       type: "bar",
       data: {
@@ -126,6 +132,7 @@ class MCPMonitor {
         ],
       },
       options: {
+        indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -138,17 +145,20 @@ class MCPMonitor {
           },
         },
         scales: {
-          y: {
+          x: {
             beginAtZero: true,
             title: {
               display: true,
               text: "调用次数",
             },
           },
-          x: {
+          y: {
             title: {
               display: true,
               text: "工具名称",
+            },
+            ticks: {
+              autoSkip: false,
             },
           },
         },
