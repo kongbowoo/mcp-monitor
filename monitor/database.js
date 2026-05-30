@@ -204,21 +204,6 @@ class Database {
         });
       }
 
-      // 添加服务器节点
-      calls.forEach((call) => {
-        if (!nodes.has(call.server)) {
-          nodes.set(call.server, {
-            id: call.server,
-            type: "server",
-            label: call.server,
-            count: 0,
-            tools: new Set(),
-          });
-        }
-        nodes.get(call.server).count++;
-        nodes.get(call.server).tools.add(call.tool);
-      });
-
       // 添加工具节点（每个会话的工具节点都是独立的）
       calls.forEach((call) => {
         const toolNodeId = `${sessionId}__${call.tool}`;
@@ -253,23 +238,6 @@ class Database {
         }
         links.get(sessionToolLinkKey).count++;
       }
-
-      // 添加工具到服务器的连接
-      calls.forEach((call) => {
-        const toolNodeId = `${sessionId}__${call.tool}`;
-        const toolServerLinkKey = `${toolNodeId}->${call.server}`;
-        if (!links.has(toolServerLinkKey)) {
-          links.set(toolServerLinkKey, {
-            source: toolNodeId,
-            target: call.server,
-            count: 0,
-            type: "runsOn",
-            timestamp: call.timestamp,
-          });
-        }
-        links.get(toolServerLinkKey).count++;
-      });
-
       // 添加工具调用之间的时序连接
       for (let i = 0; i < calls.length - 1; i++) {
         const currentCall = calls[i];
