@@ -14,6 +14,7 @@ class MCPMonitor {
       "#a8edea",
       "#fed6e3",
     ];
+    this.currentSessionId = null; // 当前选中的 session ID
     this.init();
   }
 
@@ -48,6 +49,7 @@ class MCPMonitor {
   }
 
   async loadSessionGraph(sessionId) {
+    this.currentSessionId = sessionId;
     try {
       const response = await fetch(
         `${this.baseUrl}/graph?sessionId=${sessionId}`,
@@ -55,10 +57,8 @@ class MCPMonitor {
       const data = await response.json();
 
       if (data.success) {
-        // 显示调用关系图面板
-        const graphPanel =
-          document.querySelector("#callGraph").parentNode.parentNode;
-        graphPanel.style.display = "block";
+        document.getElementById("graphHint").textContent =
+          `（当前: Session ${sessionId}）`;
         this.renderCallGraph(data.data);
       }
     } catch (error) {
@@ -66,14 +66,21 @@ class MCPMonitor {
     }
   }
 
-  hideCallGraph() {
-    // 隐藏调用关系图面板
-    const graphPanel =
-      document.querySelector("#callGraph").parentNode.parentNode;
-    graphPanel.style.display = "none";
+  // 刷新当前选中 session 的调用关系图
+  async refreshCurrentGraph() {
+    if (!this.currentSessionId) return;
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/graph?sessionId=${this.currentSessionId}`,
+      );
+      const data = await response.json();
 
-    // 清除图形内容
-    d3.select("#callGraph").selectAll("*").remove();
+      if (data.success) {
+        this.renderCallGraph(data.data);
+      }
+    } catch (error) {
+      console.error("Error refreshing session graph:", error);
+    }
   }
 
   async loadAllData() {
@@ -83,6 +90,7 @@ class MCPMonitor {
         this.loadCalls(),
         this.loadPerformance(),
         this.loadUsagePatterns(),
+        this.refreshCurrentGraph(),
       ]);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -251,9 +259,6 @@ class MCPMonitor {
   }
 
   renderCallsTable(calls) {
-    // 初始隐藏调用关系图
-    this.hideCallGraph();
-
     const tbody = document.getElementById("callsBody");
     tbody.innerHTML = "";
 
@@ -309,6 +314,12 @@ class MCPMonitor {
       sessionCell.addEventListener("click", () =>
         this.loadSessionGraph(sessionId),
       );
+
+      // 如果是当前选中的 session，高亮显示
+      if (sessionId === this.currentSessionId) {
+        sessionRow.style.backgroundColor = "#ebf4ff";
+        sessionRow.style.borderLeft = "3px solid #5a67d8";
+      }
 
       // 渲染详细行
       groupCalls.forEach((call) => {
@@ -594,37 +605,71 @@ class MCPMonitor {
     const container = document.getElementById("performance");
     container.innerHTML = "";
 
-    if (data.slowest.length > 0) {
-      const slowestDiv = this.createElementWithClass("div", "performance-item");
-      const h3 = this.createElementWithClass("h3");
-      h3.textContent = "最慢的工具";
-      slowestDiv.appendChild(h3);
+    const hasData = (data.slowest.length > 0) || (data.fastest.length > 0);
+    if (!hasData) {
+      const p = this.createElementWithClass("p");
+      p.textContent = "暂无性能数据";
+      p.style.color = "#718096";
+      container.appendChild(p);
+      return;
+    }
 
-      const ul = this.createElementWithClass("ul");
-      data.slowest.forEach((item, index) => {
-        const li = this.createElementWithClass("li");
-        li.textContent = `${index + 1}. ${item.tool}: 平均 ${item.avg}ms (${item.count} 次)`;
-        ul.appendChild(li);
-      });
-      slowestDiv.appendChild(ul);
-      container.appendChild(slowestDiv);
+    const wrapper = this.createElementWithClass("div", "performance-wrapper");
+
+    if (data.slowest.length > 0) {
+      wrapper.appendChild(this._renderPerformanceList("最慢的工具", data.slowest, "slow"));
     }
 
     if (data.fastest.length > 0) {
-      const fastestDiv = this.createElementWithClass("div", "performance-item");
-      const h3 = this.createElementWithClass("h3");
-      h3.textContent = "最快的工具";
-      fastestDiv.appendChild(h3);
-
-      const ul = this.createElementWithClass("ul");
-      data.fastest.forEach((item, index) => {
-        const li = this.createElementWithClass("li");
-        li.textContent = `${index + 1}. ${item.tool}: 平均 ${item.avg}ms (${item.count} 次)`;
-        ul.appendChild(li);
-      });
-      fastestDiv.appendChild(ul);
-      container.appendChild(fastestDiv);
+      wrapper.appendChild(this._renderPerformanceList("最快的工具", data.fastest, "fast"));
     }
+
+    container.appendChild(wrapper);
+  }
+
+  _renderPerformanceList(title, items, type) {
+    const section = this.createElementWithClass("div", "performance-section");
+
+    const h3 = this.createElementWithClass("h3", "performance-section-title");
+    const icon = type === "slow" ? "🔴" : "🟢";
+    h3.textContent = `${icon} ${title}`;
+    section.appendChild(h3);
+
+    // 计算最大耗时用于进度条比例
+    const maxAvg = Math.max(...items.map((item) => item.avg), 1);
+
+    items.forEach((item) => {
+      const row = this.createElementWithClass("div", "perf-row");
+
+      // 工具名（独立一行，完整显示）
+      const nameEl = this.createElementWithClass("div", "perf-name");
+      nameEl.textContent = item.tool;
+      row.appendChild(nameEl);
+
+      // 进度条 + 数值（第二行）
+      const barRow = this.createElementWithClass("div", "perf-bar-row");
+
+      const barWrap = this.createElementWithClass("div", "perf-bar-wrap");
+      const barFill = this.createElementWithClass("div", `perf-bar-fill perf-bar-${type}`);
+      const pct = Math.max(Math.round((item.avg / maxAvg) * 100), 3);
+      barFill.style.width = pct + "%";
+      barWrap.appendChild(barFill);
+      barRow.appendChild(barWrap);
+
+      const avgEl = this.createElementWithClass("span", "perf-avg");
+      avgEl.textContent = `${item.avg}ms`;
+      barRow.appendChild(avgEl);
+
+      const countEl = this.createElementWithClass("span", "perf-count");
+      countEl.textContent = `${item.count}次`;
+      barRow.appendChild(countEl);
+
+      row.appendChild(barRow);
+
+      section.appendChild(row);
+    });
+
+    return section;
   }
 
   async loadUsagePatterns() {

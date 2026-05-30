@@ -237,15 +237,92 @@ canvas {
   color: #4a5568;
 }
 
-.performance-item {
-  margin-bottom: 16px;
+/* 性能分析 */
+.performance-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
 }
 
-.performance-item h3 {
-  margin-bottom: 8px;
-  color: #5a67d8;
+@media (max-width: 768px) {
+  .performance-wrapper {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.performance-section-title {
+  margin-bottom: 12px;
+  color: #2d3748;
   font-size: 14px;
   font-weight: 600;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.perf-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px 0;
+  padding: 8px 0;
+  font-size: 13px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.perf-row:last-child {
+  border-bottom: none;
+}
+
+.perf-name {
+  color: #2d3748;
+  font-weight: 500;
+  font-size: 12px;
+  word-break: break-all;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.perf-bar-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.perf-bar-wrap {
+  height: 8px;
+  background: #edf2f7;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.perf-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.perf-bar-slow {
+  background: linear-gradient(90deg, #fc8181, #f56565);
+}
+
+.perf-bar-fast {
+  background: linear-gradient(90deg, #68d391, #48bb78);
+}
+
+.perf-avg {
+  text-align: right;
+  color: #4a5568;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.perf-count {
+  text-align: right;
+  color: #a0aec0;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .usage-patterns {
