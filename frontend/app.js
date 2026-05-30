@@ -204,31 +204,88 @@ class MCPMonitor {
         const tbody = document.getElementById('callsBody');
         tbody.innerHTML = '';
 
+        // 按 session_id 分组
+        const sessionGroups = new Map();
         calls.forEach(call => {
-            const row = tbody.insertRow();
-
-            row.insertCell().textContent = call.id;
-            row.insertCell().textContent = call.tool;
-            row.insertCell().textContent = call.server;
-            row.insertCell().textContent = call.timestamp;
-            row.insertCell().textContent = call.duration ? `${call.duration}ms` : '—';
-
-            const statusCell = row.insertCell();
-            const statusText = call.status;
-            statusCell.textContent = statusText;
-            statusCell.className = `status-${statusText}`;
-
-            // 渲染参数信息
-            const paramsCell = row.insertCell();
-            if (call.input) {
-                const paramsStr = this.formatParams(call.input);
-                paramsCell.textContent = paramsStr;
-                paramsCell.title = JSON.stringify(call.input, null, 2);
-                paramsCell.classList.add('params-cell');
-            } else {
-                paramsCell.textContent = '—';
+            const sessionId = call.context?.sessionId || '—';
+            if (!sessionGroups.has(sessionId)) {
+                sessionGroups.set(sessionId, []);
             }
+            sessionGroups.get(sessionId).push(call);
         });
+
+        // 渲染分组后的表格
+        sessionGroups.forEach((groupCalls, sessionId) => {
+            // 渲染 session 分组行
+            const sessionRow = tbody.insertRow();
+            sessionRow.className = 'session-group-row';
+            sessionRow.dataset.sessionId = sessionId;
+
+            // 合并单元格
+            const expandCell = sessionRow.insertCell();
+            expandCell.innerHTML = '<span class="expand-icon">+</span>';
+            expandCell.className = 'expand-cell';
+            expandCell.addEventListener('click', () => this.toggleSessionGroup(sessionId));
+
+            const sessionCell = sessionRow.insertCell();
+            sessionCell.textContent = sessionId;
+            sessionCell.className = 'session-cell';
+            sessionCell.colSpan = 6; // 合并剩余列
+
+            // 统计信息
+            const callCount = groupCalls.length;
+            const durationSum = groupCalls.reduce((sum, call) => sum + (call.duration || 0), 0);
+            const avgDuration = Math.round(durationSum / callCount);
+            const successCount = groupCalls.filter(call => call.status === 'success').length;
+            const errorCount = groupCalls.filter(call => call.status === 'error').length;
+            const pendingCount = groupCalls.filter(call => call.status === 'pending').length;
+
+            sessionCell.textContent = `Session: ${sessionId} (${callCount} calls, ${successCount} success, ${errorCount} error, ${pendingCount} pending, avg ${avgDuration}ms)`;
+
+            // 渲染详细行
+            groupCalls.forEach(call => {
+                const detailRow = tbody.insertRow();
+                detailRow.className = 'session-detail-row';
+                detailRow.dataset.sessionId = sessionId;
+                detailRow.style.display = 'none'; // 默认隐藏
+
+                detailRow.insertCell(); // 空白列，与分组行的 expand 列对齐
+                detailRow.insertCell().textContent = call.tool;
+                detailRow.insertCell().textContent = call.server;
+                detailRow.insertCell().textContent = call.timestamp;
+                detailRow.insertCell().textContent = call.duration ? `${call.duration}ms` : '—';
+
+                const statusCell = detailRow.insertCell();
+                const statusText = call.status;
+                statusCell.textContent = statusText;
+                statusCell.className = `status-${statusText}`;
+
+                // 渲染参数信息
+                const paramsCell = detailRow.insertCell();
+                if (call.input) {
+                    const paramsStr = this.formatParams(call.input);
+                    paramsCell.textContent = paramsStr;
+                    paramsCell.title = JSON.stringify(call.input, null, 2);
+                    paramsCell.classList.add('params-cell');
+                } else {
+                    paramsCell.textContent = '—';
+                }
+            });
+        });
+    }
+
+    // 切换 session 分组的显示/隐藏
+    toggleSessionGroup(sessionId) {
+        const detailRows = document.querySelectorAll(`.session-detail-row[data-session-id="${sessionId}"]`);
+        const expandIcon = document.querySelector(`.session-group-row[data-session-id="${sessionId}"] .expand-icon`);
+
+        const isHidden = detailRows[0].style.display === 'none';
+
+        detailRows.forEach(row => {
+            row.style.display = isHidden ? 'table-row' : 'none';
+        });
+
+        expandIcon.textContent = isHidden ? '−' : '+';
     }
 
     // 格式化参数信息，以便在表格中显示

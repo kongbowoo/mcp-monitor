@@ -390,3 +390,49 @@ canvas {
     color: #5a67d8;
     text-decoration: underline;
 }
+
+/* 合并行样式 */
+.session-group-row {
+    background-color: #f7fafc;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.session-group-row:hover {
+    background-color: #edf2f7;
+}
+
+.expand-cell {
+    width: 30px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.expand-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    background-color: #5a67d8;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.expand-icon:hover {
+    background-color: #4c51bf;
+}
+
+.session-cell {
+    padding-left: 10px;
+}
+
+/* 详细行样式 */
+.session-detail-row {
+    background-color: white;
+    border-left: 2px solid #e2e8f0;
+}
