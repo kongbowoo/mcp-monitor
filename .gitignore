@@ -1,5 +1,6 @@
 # 依赖目录
 node_modules/
+package-lock.json
 
 # 数据文件
 data/*.json
