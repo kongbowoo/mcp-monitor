@@ -90,8 +90,24 @@ class MCPMonitor {
         this.loadCalls(),
         this.loadPerformance(),
         this.loadUsagePatterns(),
-        this.refreshCurrentGraph(),
       ]);
+
+      // 如果没有选中会话，则默认加载第一个会话的调用关系图
+      if (!this.currentSessionId) {
+        const sessionRows = document.querySelectorAll(".session-group-row");
+        if (sessionRows.length > 0) {
+          const firstSessionId = sessionRows[0].dataset.sessionId;
+          this.loadSessionGraph(firstSessionId);
+        } else {
+          // 如果没有会话数据，清空图表
+          const svg = d3.select("#callGraph");
+          svg.selectAll("*").remove();
+          document.getElementById("graphHint").textContent = "（当前: 无会话数据）";
+        }
+      } else {
+        // 如果有选中会话，刷新该会话的图表
+        this.refreshCurrentGraph();
+      }
     } catch (error) {
       console.error("Error loading data:", error);
       this.showMessage("加载数据失败", "error");
