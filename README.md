@@ -100,6 +100,10 @@ npm run start
 
 打开浏览器访问 `http://localhost:3000`
 
+### 程序运行截图
+
+![MCP Monitor Dashboard](screenshot.png)
+
 ### 生成报告
 
 ```bash
