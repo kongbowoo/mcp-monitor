@@ -118,6 +118,28 @@ npm run report -- --format html --output reports/calls.html
 npm run clear
 ```
 
+### 关闭监控系统
+
+#### 方法一：在启动终端中直接关闭
+如果您是在命令行中直接运行 `npm run start` 启动的服务，可以在该终端窗口中按 `Ctrl + C` 组合键来终止服务。
+
+#### 方法二：通过进程管理器关闭
+1. 打开命令提示符（CMD）或 PowerShell
+2. 执行以下命令查找占用 3000 端口的进程 ID（PID）：
+   ```bash
+   netstat -ano | findstr :3000
+   ```
+3. 执行以下命令强制终止该进程：
+   ```bash
+   taskkill -F -PID <进程ID>
+   ```
+   （将 `<进程ID>` 替换为上一步找到的实际进程ID）
+
+#### 方法三：使用任务管理器
+1. 打开任务管理器（Ctrl + Shift + Esc）
+2. 在"详细信息"标签页中找到 node.exe 进程
+3. 右键点击该进程并选择"结束任务"
+
 ## API 接口
 
 ### 获取所有调用记录
