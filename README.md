@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node D:\\Code\\MCPMonitor\\monitor\\tracker.js --pre --input $ARGUMENTS",
+            "command": "node D:\\Code\\mcp-monitor\\monitor\\tracker.js --pre",
             "timeout": 30,
             "statusMessage": "Tracking MCP tool call..."
           }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node D:\\Code\\MCPMonitor\\monitor\\tracker.js --post --input $ARGUMENTS",
+            "command": "node D:\\Code\\mcp-monitor\\monitor\\tracker.js --post",
             "timeout": 30,
             "statusMessage": "Recording MCP tool result..."
           }
@@ -52,7 +52,7 @@
 ### 2. 安装依赖
 
 ```bash
-cd D:\Code\MCPMonitor
+cd D:\Code\mcp-monitor
 npm install
 ```
 
@@ -65,7 +65,7 @@ npm run start
 ## 文件结构
 
 ```
-MCPMonitor/
+mcp-monitor/
 ├── .claude/
 │   └── settings.json          # Claude Code 配置文件
 ├── monitor/
