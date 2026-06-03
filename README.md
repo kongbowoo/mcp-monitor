@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node D:\\Code\\mcp-monitor\\monitor\\tracker.js --pre",
+            "command": "cd D:/Code/mcp-monitor && node monitor/tracker.js --pre",
             "timeout": 30,
             "statusMessage": "Tracking MCP tool call..."
           }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node D:\\Code\\mcp-monitor\\monitor\\tracker.js --post",
+            "command": "cd D:/Code/mcp-monitor && node monitor/tracker.js --post",
             "timeout": 30,
             "statusMessage": "Recording MCP tool result..."
           }
