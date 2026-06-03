@@ -193,7 +193,7 @@ DELETE /api/calls
 - JSON: 结构化数据格式
 - CSV: 表格数据格式
 - HTML: 可视化报告
-- PNG: 图表图片（使用 Puppeteer）
+- PNG: 图表图片（使用 Playwright）
 
 ### 高级功能
 

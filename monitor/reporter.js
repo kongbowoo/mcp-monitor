@@ -15,7 +15,7 @@ program
   .version("1.0.0");
 
 program
-  .option("--format <type>", "报告格式 (json, csv, html)", "json")
+  .option("--format <type>", "报告格式 (json, csv, html, png)", "json")
   .option("--output <path>", "输出文件路径")
   .option("--limit <number>", "限制报告中的记录数")
   .option("--tool <name>", "过滤特定工具")
@@ -331,6 +331,34 @@ async function generateJsonReport(outputPath, query) {
 /**
  * 主函数
  */
+async function generatePngReport(outputPath) {
+  const { chromium } = require('playwright');
+
+  // 启动浏览器
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  try {
+    // 导航到监控页面
+    await page.goto('http://localhost:3000');
+
+    // 等待页面加载
+    await page.waitForSelector('h1');
+
+    // 截图
+    await page.screenshot({ path: outputPath, fullPage: true });
+
+    console.log(`PNG 报告已生成: ${outputPath}`);
+  } catch (error) {
+    console.error('生成 PNG 报告失败:', error);
+    throw error;
+  } finally {
+    // 关闭浏览器
+    await browser.close();
+  }
+}
+
 async function main() {
   const query = {};
 
@@ -377,6 +405,9 @@ async function main() {
       break;
     case "html":
       generateHtmlReport(outputPath, query);
+      break;
+    case "png":
+      await generatePngReport(outputPath);
       break;
     default:
       console.error(`不支持的格式: ${options.format}`);
